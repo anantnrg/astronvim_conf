@@ -1,85 +1,124 @@
+if vim.g.neovide then
+  vim.o.guifont = "Victor Mono:h11"
+  vim.opt.linespace = -2
+  vim.api.nvim_set_keymap('n', '<C-c>', '"+y', {noremap = true, silent = true})
+  vim.api.nvim_set_keymap('i', '<C-v>', '<Esc>"+pa', {noremap = true, silent = true})
+  vim.api.nvim_set_option("clipboard", "unnamedplus")
+
+
+end
+
+
+
 return {
-  -- Configure AstroNvim updates
   updater = {
-    remote = "origin", -- remote to use
-    channel = "stable", -- "stable" or "nightly"
-    version = "latest", -- "latest", tag name, or regex search like "v1.*" to only do updates before v2 (STABLE ONLY)
-    branch = "nightly", -- branch name (NIGHTLY ONLY)
-    commit = nil, -- commit hash (NIGHTLY ONLY)
-    pin_plugins = nil, -- nil, true, false (nil will pin plugins on stable only)
-    skip_prompts = false, -- skip prompts about breaking changes
-    show_changelog = true, -- show the changelog after performing an update
-    auto_quit = false, -- automatically quit the current session after a successful update
-    remotes = { -- easily add new remotes to track
-      --   ["remote_name"] = "https://remote_url.come/repo.git", -- full remote url
-      --   ["remote2"] = "github_user/repo", -- GitHub user/repo shortcut,
-      --   ["remote3"] = "github_user", -- GitHub user assume AstroNvim fork
-    },
+    remote = "origin",
+    channel = "nightly",
+    version = "latest",
+    branch = "nightly",
   },
 
-  -- Set colorscheme to use
-  colorscheme = "astrodark",
+  colorscheme = "tokyonight",
 
-  -- Diagnostics configuration (for vim.diagnostics.config({...})) when diagnostics are on
+  plugins = {
+    {
+      "folke/tokyonight.nvim",
+      name = "tokyonight",
+      config = function()
+        require("tokyonight").setup {
+           style = "night",
+           transparent = true,
+           styles = {
+             comments = { italic = true },
+             keywords = { italic = false },
+             functions = { italic = true },
+             variables = { italic = true },
+           }
+        }
+      end,
+    },
+    {
+      "elentok/format-on-save.nvim",
+      config = function()
+        local formatters = require("format-on-save").formatters
+
+        require("format-on-save").setup({
+          exclude_path_patterns = {
+            "/target"
+          },
+          formatter_by_ft = {
+            rust = formatters.lsp,
+            lua = formatters.lsp,
+          }
+        })
+      end
+    },
+    {
+      "stevearc/resession.nvim",
+      lazy = false,
+      config = function()
+        local resession = require("resession")
+
+        resession.setup({
+          autosave = {
+            enabled = true,
+            interval = 60,
+            notify = false,
+          }
+        })
+        vim.api.nvim_create_autocmd("VimEnter", {
+          callback = function()
+            if vim.fn.argc(-1) == 0 then
+              resession.load(vim.fn.getcwd(), { dir = "dirsession", silence_errors = true })
+            end
+          end,
+        })
+        vim.api.nvim_create_autocmd("VimLeavePre", {
+          callback = function()
+            resession.save(vim.fn.getcwd(), { dir = "dirsession", notify = false })
+          end,
+        })
+      end
+    },
+    {
+      "EtiamNullam/deferred-clipboard.nvim",
+      config = function ()
+        require("deferred-clipboard").setup({
+          fallback = "unnamedplus"
+        })
+      end
+    }
+  },
+
   diagnostics = {
     virtual_text = true,
     underline = true,
   },
 
   lsp = {
-    -- customize lsp formatting options
     formatting = {
-      -- control auto formatting on save
       format_on_save = {
-        enabled = true, -- enable or disable format on save globally
-        allow_filetypes = { -- enable format on save for specified filetypes only
-          -- "go",
-        },
-        ignore_filetypes = { -- disable format on save for specified filetypes
-          -- "python",
+        enabled = true,
+        allow_filetypes = {
+          "rust"
         },
       },
-      disabled = { -- disable formatting capabilities for the listed language servers
-        -- disable lua_ls formatting capability if you want to use StyLua to format your lua code
-        -- "lua_ls",
-      },
-      timeout_ms = 1000, -- default format timeout
-      -- filter = function(client) -- fully override the default formatting function
-      --   return true
-      -- end
-    },
-    -- enable servers that you already have installed without mason
-    servers = {
-      -- "pyright"
+      timeout_ms = 1000,
     },
   },
 
-  -- Configure require("lazy").setup() options
   lazy = {
     defaults = { lazy = true },
     performance = {
       rtp = {
-        -- customize default disabled vim plugins
         disabled_plugins = { "tohtml", "gzip", "matchit", "zipPlugin", "netrwPlugin", "tarPlugin" },
       },
     },
   },
 
-  -- This function is run last and is a good place to configuring
-  -- augroups/autocommands and custom filetypes also this just pure lua so
-  -- anything that doesn't fit in the normal config locations above can go here
   polish = function()
-    -- Set up custom filetypes
-    -- vim.filetype.add {
-    --   extension = {
-    --     foo = "fooscript",
-    --   },
-    --   filename = {
-    --     ["Foofile"] = "fooscript",
-    --   },
-    --   pattern = {
-    --     ["~/%.config/foo/.*"] = "fooscript",
-    --   },
-    -- }
+    vim.cmd("set number")
+    vim.cmd("set expandtab")
+    vim.cmd("set shiftwidth=4")
   end,
 }
